@@ -1,0 +1,27 @@
+Configure Tomcat context.xml with AMQ resource as below.
+
+<Resource name="jms/ConnectionFactory" global="jms/ConnectionFactory" auth="Container"
+       type="org.apache.activemq.ActiveMQConnectionFactory"
+       factory="org.apache.activemq.jndi.JNDIReferenceFactory"
+       brokerURL="tcp://localhost:61616"
+       userName="admin"
+       password="admin"
+       useEmbeddedBroker="false"/>
+
+
+Use jndiContext.lookup to look up the ActiveMQConnectionFactory from the JNDI resource.
+
+private ConnectionFactory createJmsConnectionFactory(String jndiName, JMSExceptionListener exceptionListener) {
+        CachingConnectionFactory connectionFactory = null;
+        try {
+            Context jndiContext = new InitialContext();
+            Context envContext = (Context) jndiContext.lookup("java:comp/env");
+            ActiveMQConnectionFactory activeMQConnectionFactory = (ActiveMQConnectionFactory) envContext.lookup(jndiName);
+            connectionFactory = new CachingConnectionFactory(activeMQConnectionFactory);
+            connectionFactory.setExceptionListener(exceptionListener);
+        } catch (NamingException e) {
+            String msg = String.format("Unable to get JMS container with name %s ", jndiName);
+            throw new RuntimeException(msg, e);
+        }
+        return connectionFactory;
+    }
